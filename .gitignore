@@ -1,2 +1,2 @@
-./data/*
-./init/initdb.sql
+mysql/data/*
+initdb.sql
