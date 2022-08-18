@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  init-guacamole-db:
+    image: guacamole/guacamole:latest
+    command: ["/bin/sh", "-c", "test -e /init/initdb.sql && echo 'init file already exists' || /opt/guacamole/bin/initdb.sh --mysql > /init/initdb.sql" ]
+    volumes:
+      - ./mysql/init:/init
+
+  mysql:
+    container_name: guac_mysql
+    image: mysql:latest
+    restart: always
+    volumes:
+      - ./mysql/init/:/docker-entrypoint-initdb.d
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=guacamole
+      - MYSQL_USER=guacamole
+      - MYSQL_PASSWORD=guacamole
+      - LANG=C.UTF-8
+    networks:
+      - guac
+
+  guacd:
+    container_name: guac_guacd
+    image: guacamole/guacd:latest
+    restart: always
+    networks:
+      - guac
+
+  guacamole:
+    container_name: guac_guacamole
+    image: guacamole/guacamole:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    links:
+      - mysql
+      - guacd
+    environment:
+      - GUACD_HOSTNAME=guacd
+      - MYSQL_DATABASE=guacamole
+      - MYSQL_HOSTNAME=mysql
+      - MYSQL_USER=guacamole
+      - MYSQL_PASSWORD=guacamole
+    networks:
+      - guac
+
+networks:
+  guac:
+    driver: bridge
